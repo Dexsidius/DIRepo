@@ -1,4 +1,5 @@
 #CODE BY ISA BOLLING
+#Edited by Da'Shawn Larry
 import os
 os.environ["PYSDL2_DLL_PATH"] = os.path.dirname(os.path.abspath(__file__))
 from sdl2 import *
@@ -22,7 +23,7 @@ def main():
     SDL_ShowCursor(0)
 
     #________________CLASSES______________________________#
-    class AnimatedCharacter:
+    class Background:
         def __init__(self, w, h, x, y):
             self.w = w
             self.h = h
@@ -31,21 +32,42 @@ def main():
             self.s_x = 0
             self.s_y = 0
             self.n = self.s_y
+            self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                     "content", "tilesets.bmp")
+            self.image = SDL_LoadBMP(self.path.encode('utf-8'))
+            self.bgSurface = SDL_CreateTextureFromSurface(renderer, self.image)
+            SDL_FreeSurface(self.image)
+        
+        def Render(self):
+            ScreenWipe()
+            SDL_RenderCopy(renderer, self.bgSurface, None, None)
+
+        def Quit(self):
+            SDL_DestroyTexture(self.bgSurface)
+
+    class AnimatedCharacter:
+        def __init__(self, w, h, x, y):
+            self.w = w                      #width
+            self.h = h                      #height
+            self.x = x                      #Character's x position
+            self.y = y                      #Character's y position
+            self.s_x = 0                    #Sprite map x
+            self.s_y = 0                    #Sprite map y
+            self.n = self.s_y
             self.Moving = False
             self.Animate = False
             self.A_Rate = 0
             self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                      "content", "MyChar.bmp")
-            self.image = SDL_LoadBMP(self.path.encode('utf-8'))
-            self.texture = SDL_CreateTextureFromSurface(renderer, self.image)
-            SDL_FreeSurface(self.image)
+            self.image2 = SDL_LoadBMP(self.path.encode('utf-8'))
+            self.texture = SDL_CreateTextureFromSurface(renderer, self.image2)
+            SDL_FreeSurface(self.image2)
 
         def Render(self):
-            ScreenWipe()
             self.s_y = self.n
             self.src_rect = SDL_Rect(self.s_x, self.s_y, self.w, self.h)
-            self.dest_rect = SDL_Rect(self.x, self.y, 32, 32)
-            SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect )
+            self.dest_rect = SDL_Rect(self.x, self.y, 20, 20)           #Scales the Sprite down to size
+            SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect)
 
         def Movement(self, state, direction):
             self.direction = direction
@@ -56,6 +78,10 @@ def main():
                     self.x -= 3
                 elif (direction == 'right'):
                     self.x += 3
+                elif (direction == 'down'):
+                    self.y += 3
+                elif (direction == 'up'):
+                    self.y -= 3
             elif (state == False):
                 self.Moving = False
                 self.Animate = False
@@ -82,17 +108,42 @@ def main():
 
             if self.Moving == False:
                 if (direction == 'up'):
-                    self.s_x = 97
+                    self.s_x = 228
                 if (direction == 'down'):
-                    self.s_x = 224
+                    self.s_x = 120
                 if (direction == ''):
                     self.s_x = 0
 
 
         def Quit(self):
             SDL_DestroyTexture(self.texture)
+
+    class NPC:
+        def __init__(self, w, h, x, y):
+            self.w = w                      #width
+            self.h = h                      #height
+            self.x = x                      #Character's x position
+            self.y = y                      #Character's y position
+            self.s_y = 0                    #Sprite map y
+            self.n = self.s_y
+            self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                     "content", "others.bmp")
+            self.image = SDL_LoadBMP(self.path.encode('utf-8'))
+            self.texture = SDL_CreateTextureFromSurface(renderer, self.image)
+            SDL_FreeSurface(self.image)
+
+        def Render(self):
+            self.s_y = self.n
+            self.src_rect = SDL_Rect(self.s_x, self.s_y, self.w, self.h)
+            self.dest_rect = SDL_Rect(self.x, self.y, 25, 25)
+            SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect)
+
+        def Quit(self):
+            SDL_DestroyTexture(self.texture)
     #________________OBJECTS______________________________#
-    Quote = AnimatedCharacter( 32, 32, 450, 260)
+    Quote = AnimatedCharacter(32, 32, 450, 260)
+    NPC1 = NPC(40, 40, 200, 30)
+    background = Background(WIDTH, HEIGHT, 0, 0)
 
     #________________FUNCTIONS____________________________#
     def ScreenPresent():
@@ -136,11 +187,11 @@ def main():
             direction = 'right'
 
         if (key[SDL_SCANCODE_UP]):
-            movement = False
+            movement = True
             direction = 'up'
 
         if (key[SDL_SCANCODE_DOWN]):
-            movement = False
+            movement = True
             direction = 'down'
 
         if (key[SDL_SCANCODE_F12]):
@@ -159,7 +210,9 @@ def main():
         while (SDL_PollEvent(ctypes.byref(event))):
             if (event.type == SDL_QUIT):
                 SDL_DestroyRenderer(renderer)
+                NPC1.Quit()
                 Quote.Quit()
+                background.Quit()
                 SDL_DestroyWindow(window)
                 running = False
                 break
@@ -170,8 +223,9 @@ def main():
 
         #RENDERING______________________________________________#
         ScreenWipe()
-        SDL_SetRenderDrawColor(renderer, 242, 242, 242, 255)
+        background.Render()
         Quote.Render()
+        NPC1.Render()
         ScreenPresent()
 
     SDL_Quit()
