@@ -59,9 +59,9 @@ def main():
             self.A_Rate = 0
             self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                      "content", "MyChar.bmp")
-            self.image2 = SDL_LoadBMP(self.path.encode('utf-8'))
-            self.texture = SDL_CreateTextureFromSurface(renderer, self.image2)
-            SDL_FreeSurface(self.image2)
+            self.image = SDL_LoadBMP(self.path.encode('utf-8'))
+            self.texture = SDL_CreateTextureFromSurface(renderer, self.image)
+            SDL_FreeSurface(self.image)
 
         def Render(self):
             self.s_y = self.n
