@@ -51,14 +51,14 @@ def main():
             self.h = h                      #height
             self.x = x                      #Character's x position
             self.y = y                      #Character's y position
-            self.s_x = 0                    #Sprite map x
-            self.s_y = 0                    #Sprite map y
+            self.s_x = 5                    #Sprite map x
+            self.s_y = 140                    #Sprite map y
             self.n = self.s_y
             self.Moving = False
             self.Animate = False
             self.A_Rate = 0
             self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                     "content", "MyChar.bmp")
+                                     "content", "others.bmp")
             self.image = SDL_LoadBMP(self.path.encode('utf-8'))
             self.texture = SDL_CreateTextureFromSurface(renderer, self.image)
             SDL_FreeSurface(self.image)
@@ -66,7 +66,7 @@ def main():
         def Render(self):
             self.s_y = self.n
             self.src_rect = SDL_Rect(self.s_x, self.s_y, self.w, self.h)
-            self.dest_rect = SDL_Rect(self.x, self.y, 20, 20)           #Scales the Sprite down to size
+            self.dest_rect = SDL_Rect(self.x, self.y, 30, 34)           #Scales the Sprite down to size
             SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect)
 
         def Movement(self, state, direction):
@@ -75,18 +75,16 @@ def main():
                 self.Moving = True
                 self.Animate = True
                 if (direction == 'left'):
-                    self.x -= 3
+                    self.x -= 2
                 elif (direction == 'right'):
-                    self.x += 3
+                    self.x += 2
                 elif (direction == 'down'):
-                    self.y += 3
+                    self.y += 2
                 elif (direction == 'up'):
-                    self.y -= 3
+                    self.y -= 2
             elif (state == False):
                 self.Moving = False
                 self.Animate = False
-
-
         def Animating(self):
             if self.Animate == True:
                 self.A_Rate += 1
@@ -96,23 +94,25 @@ def main():
                 if self.A_Rate == 4:
                     self.A_Rate = 0
                     if self.direction == 'left':
-                       self.n = 0
+                       self.n = 175
                        self.s_x += 33
-                       if self.s_x == 99:
-                           self.s_x = 0
+                       if self.s_x >= 95:
+                           self.s_x = 5
                     if self.direction == 'right':
-                        self.n = 32
-                        self.s_x += 31
-                        if self.s_x == 93:
-                            self.s_x = 0
-
-            if self.Moving == False:
-                if (direction == 'up'):
-                    self.s_x = 228
-                if (direction == 'down'):
-                    self.s_x = 120
-                if (direction == ''):
-                    self.s_x = 0
+                        self.n = 209
+                        self.s_x += 33
+                        if self.s_x >= 99:
+                            self.s_x = 5
+                    if self.direction == 'up':
+                        self.n = 242
+                        self.s_x += 33
+                        if self.s_x >= 99:
+                            self.s_x = 5
+                    if self.direction == 'down':
+                        self.n = 141
+                        self.s_x += 33
+                        if self.s_x >= 99:
+                            self.s_x = 5
 
 
         def Quit(self):
@@ -124,6 +124,7 @@ def main():
             self.h = h                      #height
             self.x = x                      #Character's x position
             self.y = y                      #Character's y position
+            self.s_x = 0                    #Sprite map x        
             self.s_y = 0                    #Sprite map y
             self.n = self.s_y
             self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -135,14 +136,14 @@ def main():
         def Render(self):
             self.s_y = self.n
             self.src_rect = SDL_Rect(self.s_x, self.s_y, self.w, self.h)
-            self.dest_rect = SDL_Rect(self.x, self.y, 25, 25)
+            self.dest_rect = SDL_Rect(self.x, self.y, 30, 33)
             SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect)
 
         def Quit(self):
             SDL_DestroyTexture(self.texture)
     #________________OBJECTS______________________________#
-    Quote = AnimatedCharacter(32, 32, 450, 260)
-    NPC1 = NPC(40, 40, 200, 30)
+    Quote = AnimatedCharacter(33, 31, 450, 260)
+    npcList = {'NPC' : [NPC(30, 34 , 225, 130)]}
     background = Background(WIDTH, HEIGHT, 0, 0)
 
     #________________FUNCTIONS____________________________#
@@ -225,7 +226,8 @@ def main():
         ScreenWipe()
         background.Render()
         Quote.Render()
-        NPC1.Render()
+        for npc in npcList['NPC']:
+            npc.Render()
         ScreenPresent()
 
     SDL_Quit()
