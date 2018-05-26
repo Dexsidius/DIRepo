@@ -1,4 +1,5 @@
 #CODE BY ISA BOLLING
+#Edited by Da'Shawn Larry
 import os
 os.environ["PYSDL2_DLL_PATH"] = os.path.dirname(os.path.abspath(__file__))
 from sdl2 import *
@@ -22,7 +23,7 @@ def main():
     SDL_ShowCursor(0)
 
     #________________CLASSES______________________________#
-    class AnimatedCharacter:
+    class Background:
         def __init__(self, w, h, x, y):
             self.w = w
             self.h = h
@@ -31,21 +32,42 @@ def main():
             self.s_x = 0
             self.s_y = 0
             self.n = self.s_y
+            self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                     "content", "tilesets.bmp")
+            self.image = SDL_LoadBMP(self.path.encode('utf-8'))
+            self.bgSurface = SDL_CreateTextureFromSurface(renderer, self.image)
+            SDL_FreeSurface(self.image)
+        
+        def Render(self):
+            ScreenWipe()
+            SDL_RenderCopy(renderer, self.bgSurface, None, None)
+
+        def Quit(self):
+            SDL_DestroyTexture(self.bgSurface)
+
+    class AnimatedCharacter:
+        def __init__(self, w, h, x, y):
+            self.w = w                      #width
+            self.h = h                      #height
+            self.x = x                      #Character's x position
+            self.y = y                      #Character's y position
+            self.s_x = 5                    #Sprite map x
+            self.s_y = 140                    #Sprite map y
+            self.n = self.s_y
             self.Moving = False
             self.Animate = False
             self.A_Rate = 0
             self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                     "content", "MyChar.bmp")
+                                     "content", "others.bmp")
             self.image = SDL_LoadBMP(self.path.encode('utf-8'))
             self.texture = SDL_CreateTextureFromSurface(renderer, self.image)
             SDL_FreeSurface(self.image)
 
         def Render(self):
-            ScreenWipe()
             self.s_y = self.n
             self.src_rect = SDL_Rect(self.s_x, self.s_y, self.w, self.h)
-            self.dest_rect = SDL_Rect(self.x, self.y, 32, 32)
-            SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect )
+            self.dest_rect = SDL_Rect(self.x, self.y, 30, 34)           #Scales the Sprite down to size
+            SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect)
 
         def Movement(self, state, direction):
             self.direction = direction
@@ -53,14 +75,16 @@ def main():
                 self.Moving = True
                 self.Animate = True
                 if (direction == 'left'):
-                    self.x -= 3
+                    self.x -= 2
                 elif (direction == 'right'):
-                    self.x += 3
+                    self.x += 2
+                elif (direction == 'down'):
+                    self.y += 2
+                elif (direction == 'up'):
+                    self.y -= 2
             elif (state == False):
                 self.Moving = False
                 self.Animate = False
-
-
         def Animating(self):
             if self.Animate == True:
                 self.A_Rate += 1
@@ -70,29 +94,57 @@ def main():
                 if self.A_Rate == 4:
                     self.A_Rate = 0
                     if self.direction == 'left':
-                       self.n = 0
+                       self.n = 175
                        self.s_x += 33
-                       if self.s_x == 99:
-                           self.s_x = 0
+                       if self.s_x >= 95:
+                           self.s_x = 5
                     if self.direction == 'right':
-                        self.n = 32
-                        self.s_x += 31
-                        if self.s_x == 93:
-                            self.s_x = 0
-
-            if self.Moving == False:
-                if (direction == 'up'):
-                    self.s_x = 97
-                if (direction == 'down'):
-                    self.s_x = 224
-                if (direction == ''):
-                    self.s_x = 0
+                        self.n = 209
+                        self.s_x += 33
+                        if self.s_x >= 99:
+                            self.s_x = 5
+                    if self.direction == 'up':
+                        self.n = 242
+                        self.s_x += 33
+                        if self.s_x >= 99:
+                            self.s_x = 5
+                    if self.direction == 'down':
+                        self.n = 141
+                        self.s_x += 33
+                        if self.s_x >= 99:
+                            self.s_x = 5
 
 
         def Quit(self):
             SDL_DestroyTexture(self.texture)
+
+    class NPC:
+        def __init__(self, w, h, x, y):
+            self.w = w                      #width
+            self.h = h                      #height
+            self.x = x                      #Character's x position
+            self.y = y                      #Character's y position
+            self.s_x = 0                    #Sprite map x        
+            self.s_y = 0                    #Sprite map y
+            self.n = self.s_y
+            self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                     "content", "others.bmp")
+            self.image = SDL_LoadBMP(self.path.encode('utf-8'))
+            self.texture = SDL_CreateTextureFromSurface(renderer, self.image)
+            SDL_FreeSurface(self.image)
+
+        def Render(self):
+            self.s_y = self.n
+            self.src_rect = SDL_Rect(self.s_x, self.s_y, self.w, self.h)
+            self.dest_rect = SDL_Rect(self.x, self.y, 30, 33)
+            SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect)
+
+        def Quit(self):
+            SDL_DestroyTexture(self.texture)
     #________________OBJECTS______________________________#
-    Quote = AnimatedCharacter( 32, 32, 450, 260)
+    Quote = AnimatedCharacter(33, 31, 450, 260)
+    npcList = {'NPC' : [NPC(30, 34 , 225, 130)]}
+    background = Background(WIDTH, HEIGHT, 0, 0)
 
     #________________FUNCTIONS____________________________#
     def ScreenPresent():
@@ -136,11 +188,11 @@ def main():
             direction = 'right'
 
         if (key[SDL_SCANCODE_UP]):
-            movement = False
+            movement = True
             direction = 'up'
 
         if (key[SDL_SCANCODE_DOWN]):
-            movement = False
+            movement = True
             direction = 'down'
 
         if (key[SDL_SCANCODE_F12]):
@@ -159,7 +211,9 @@ def main():
         while (SDL_PollEvent(ctypes.byref(event))):
             if (event.type == SDL_QUIT):
                 SDL_DestroyRenderer(renderer)
+                NPC1.Quit()
                 Quote.Quit()
+                background.Quit()
                 SDL_DestroyWindow(window)
                 running = False
                 break
@@ -170,8 +224,10 @@ def main():
 
         #RENDERING______________________________________________#
         ScreenWipe()
-        SDL_SetRenderDrawColor(renderer, 242, 242, 242, 255)
+        background.Render()
         Quote.Render()
+        for npc in npcList['NPC']:
+            npc.Render()
         ScreenPresent()
 
     SDL_Quit()
