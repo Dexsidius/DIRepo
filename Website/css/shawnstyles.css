@@ -1,4 +1,4 @@
-.jumbotron-new{
+.jumbotron{
     background-color: #000000;
     color: #000000;
     
@@ -13,6 +13,10 @@
     background-color:#c12206;
     color: black;
 
+}
+
+.row-content{
+    border-bottom: 5px double black;
 }
 
 .navbar-inverse{

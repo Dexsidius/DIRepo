@@ -1,8 +1,10 @@
 {
   "ExpandedNodes": [
     "",
-    "\\content"
+    "\\content",
+    "\\Website",
+    "\\Website\\css"
   ],
-  "SelectedNode": "\\Dokutsu.py",
+  "SelectedNode": "\\Website\\css\\shawnstyles.css",
   "PreviewInSolutionExplorer": false
 }
