@@ -142,8 +142,6 @@ def main():
         def Quit(self):
             SDL_DestroyTexture(self.texture)
     #________________OBJECTS______________________________#
-    Quote = AnimatedCharacter(33, 31, 450, 260)
-    npcList = {'NPC' : [NPC(30, 34 , 225, 130)]}
     background = Background(WIDTH, HEIGHT, 0, 0)
 
     #________________FUNCTIONS____________________________#
@@ -159,13 +157,13 @@ def main():
         elif (fs == False):
             SDL_SetWindowFullscreen(window, 0)
 
-    def TPS(T_rate):
-        start_time_ms = int(SDL_GetTicks())
-        elapsed_time_ms = int(SDL_GetTicks() - start_time_ms)
-        SDL_Delay(1000//T_rate - elapsed_time_ms)
-        seconds_per_frame = (SDL_GetTicks() - start_time_ms) / 1000
-        ticks = 1/ seconds_per_frame
-        print(ticks)
+    #def TPS(T_rate):
+    #    start_time_ms = int(SDL_GetTicks())
+    #    elapsed_time_ms = int(SDL_GetTicks() - start_time_ms)
+    #    SDL_Delay(1000//T_rate - elapsed_time_ms)
+    #    seconds_per_frame = (SDL_GetTicks() - start_time_ms) / 1000
+    #    ticks = 1 // seconds_per_frame
+    #    print(ticks)
 
     #______________GENERAL PROCESSING______________________#
     event = SDL_Event()
@@ -173,7 +171,7 @@ def main():
         direction = ''
         movement = False
         #TICK_RATE__________________________________________#
-        TPS(TickRate)
+        #TPS(TickRate)
 
         #EVENTS_____________________________________________#
         #___KeyEvents_______________________________________#
@@ -211,23 +209,16 @@ def main():
         while (SDL_PollEvent(ctypes.byref(event))):
             if (event.type == SDL_QUIT):
                 SDL_DestroyRenderer(renderer)
-                NPC1.Quit()
-                Quote.Quit()
                 background.Quit()
                 SDL_DestroyWindow(window)
                 running = False
                 break
 
         #LOGIC__________________________________________________#
-        Quote.Movement(movement, direction)
-        Quote.Animating()
 
         #RENDERING______________________________________________#
         ScreenWipe()
         background.Render()
-        Quote.Render()
-        for npc in npcList['NPC']:
-            npc.Render()
         ScreenPresent()
 
     SDL_Quit()
