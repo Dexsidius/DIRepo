@@ -6,7 +6,10 @@
         {
             "label": "run",
             "type": "shell",
-            "command": "python Dokutsu.py",
+            "command": "python",
+            "args":[
+                "Dokutsu.py"
+            ],
             "problemMatcher": []
         }
     ]

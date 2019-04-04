@@ -7,7 +7,8 @@
             "label": "Python run",
             "type": "shell",
             "command": "python",
-            "args":["${workspaceFolder}/Dokutsu Project/Dokutsu.py"
+            "args":[
+                "Dokutsu.py"
             ],
             "group":{
                 "kind": "build",

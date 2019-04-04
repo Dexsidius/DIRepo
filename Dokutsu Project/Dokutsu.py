@@ -234,6 +234,14 @@ def WindowState(window, renderer, fs):
     elif (fs == False):
         SDL_SetWindowFullscreen(window, 0)
 
+def GetCharacters():
+    resources = dict()
+    for path in os.listdir('sprites'):
+        c = path.split(".bmp")
+        resources[c[0]] = c
+    
+    return resources
+
 #def TPS(T_rate):
 #    start_time_ms = int(SDL_GetTicks())
 #    elapsed_time_ms = int(SDL_GetTicks() - start_time_ms)
@@ -244,9 +252,9 @@ def WindowState(window, renderer, fs):
 
 def main():
     SDL_Init(SDL_INIT_VIDEO)
-    if (TTF_Init < 0):
-        print(TTF_GetError())
-        return -1
+    if (TTF_Init() == -1):
+        print("TTF_Init: ", TTF_GetError())
+
 
     #__________________VARIABLES_________________________#
     running = True
@@ -256,21 +264,26 @@ def main():
     char_selection = ""
     player = None
     Fullscreen = False
-    gamestate = "MENU"
+    gamestate = 'MENU'
 
     #_______________Window and Renderer___________________#
+    mouse = Pointer()
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, b'opengl')
     window = SDL_CreateWindow(b"R_Dokutsu Monogatari", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                      WIDTH, HEIGHT, 0)
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC)
-    SDL_ShowCursor(0)
+    event = SDL_Event()
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
+    SDL_ShowCursor(SDL_ENABLE)
     
     #________________OBJECTS______________________________#
 
     menu_items = {
-        "New Game": TextObject(renderer, "New Game", 200, 50, ['arcade', b'font/arcade.ttf'], location=(280, 320)),
-        "Load Game": TextObject(renderer, "Load Game", 200, 50, ['arcade'], location=(280, 370))
+        "New Game": TextObject(renderer, "New Game", 200, 50, ['joystix', b'joystix.ttf'], location=(240, 260)),
+        "Load Game": TextObject(renderer, "Load Game", 200, 50, ['joystix'], location=(240, 320))
     }
+
+    characters = GetCharacters()
 
     if (player):
         player = AnimatedCharacter(32, 36, 0, 0, renderer, character_selection)
@@ -311,12 +324,14 @@ def main():
 
         if (key[SDL_SCANCODE_ESCAPE]):
             SDL_Quit()
+            TTF_Quit()
             running = False
             
         # ________________________________________________#
         WindowState(window, renderer, Fullscreen)
         #___________________________________________________#
         while (SDL_PollEvent(ctypes.byref(event))):
+            mouse.Compute(event)
             if (event.type == SDL_QUIT):
                 SDL_DestroyRenderer(renderer)
                 #background.Quit()
@@ -325,32 +340,44 @@ def main():
                 break
 
         #LOGIC__________________________________________________#
-        if (gamestate == "MENU"):
+        if (gamestate == 'MENU'):
+            for item in menu_items:
+                if (mouse.Is_Touching(menu_items[item])):
+                    menu_items[item].highlight = True
+                else:
+                    menu_items[item].highlight = False
+                
+                if (mouse.Is_Clicking(menu_items[item])):
+                    if (item == "NEW GAME"):
+                        gamestate == 'CHARACTER SELECTION'
+
+        if (gamestate == 'CHARACTER SELECTION'):
             pass
 
-        if (player):
-            player.Movement(movement, direction)
-            player.Animating()
+        if (gamestate == 'GAME'):
+            if (player):
+                player.Movement(movement, direction)
+                player.Animating()
         
 
 
         #RENDERING______________________________________________#
-        SDL_SetRenderDrawColor(renderer, 220, 220, 220, 255)
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255)
         SDL_RenderClear(renderer)
-        
-        if (gamestate == "MENU"):
-            
+
+        if (gamestate == 'MENU'):
             for item in menu_items:
                 menu_items[item].Render()
         
-        if (gamestate == "SELECTION"):
+        if (gamestate == 'CHARACTER SELECTION'):
             pass
 
-       # background.Render()
-        ScreenPresent(renderer)
 
+       # background.Render()
+        SDL_RenderPresent(renderer)
+        SDL_Delay(10)
+        
     SDL_Quit()
-    TTF_Quit()
     return 0
     #_____________
 main()
