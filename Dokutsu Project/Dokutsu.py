@@ -165,6 +165,30 @@ def main():
     #    ticks = 1 // seconds_per_frame
     #    print(ticks)
 
+def main():
+    SDL_Init(SDL_INIT_VIDEO)
+    #__________________VARIABLES_________________________#
+    running = True
+    WIDTH = 640
+    HEIGHT = 480
+    TickRate = 60
+    char_selection = ""
+    player = None
+    Fullscreen = False
+    gamestate = ""
+
+    #_______________Window and Renderer___________________#
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, b'opengl')
+    window = SDL_CreateWindow(b"R_Dokutsu Monogatari", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                     WIDTH, HEIGHT, 0)
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC)
+    SDL_ShowCursor(0)
+    
+    #________________OBJECTS______________________________#
+    
+    if (char_selection):
+        player = AnimatedCharacter(32, 36, 0, 0, char_selection)
+
     #______________GENERAL PROCESSING______________________#
     event = SDL_Event()
     while (running):
