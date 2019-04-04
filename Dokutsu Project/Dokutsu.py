@@ -3,123 +3,108 @@
 import os
 os.environ["PYSDL2_DLL_PATH"] = os.path.dirname(os.path.abspath(__file__))
 from sdl2 import *
+from sdl2.sdlttf import *
 import sdl2.ext
 import ctypes
 
-def main():
-    SDL_Init(SDL_INIT_VIDEO)
-    #__________________VARIABLES_________________________#
-    running = True
-    WIDTH = 640
-    HEIGHT = 480
-    TickRate = 60
-    Fullscreen = False
+#________________CLASSES______________________________#
+class Background:
+    def __init__(self, w, h, x, y, renderer):
+        self.w = w
+        self.h = h
+        self.x = x
+        self.y = y
+        self.s_x = 0
+        self.s_y = 0
+        self.n = self.s_y
+        self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    "sprites", ".bmp")
+        self.image = SDL_LoadBMP(self.path.encode('utf-8'))
+        self.bgSurface = SDL_CreateTextureFromSurface(renderer, self.image)
+        SDL_FreeSurface(self.image)
+    
+    def Render(self, renderer):
+        ScreenWipe(renderer)
+        SDL_RenderCopy(renderer, self.bgSurface, None, None)
 
-    #_______________Window and Renderer___________________#
-    SDL_SetHint(SDL_HINT_RENDER_DRIVER, b'opengl')
-    window = SDL_CreateWindow(b"R_Dokutsu Monogatari", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                     WIDTH, HEIGHT, 0)
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC)
-    SDL_ShowCursor(0)
+    def Quit(self):
+        SDL_DestroyTexture(self.bgSurface)
 
-    #________________CLASSES______________________________#
-    class Background:
-        def __init__(self, w, h, x, y):
-            self.w = w
-            self.h = h
-            self.x = x
-            self.y = y
-            self.s_x = 0
-            self.s_y = 0
-            self.n = self.s_y
-            self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                     "content", "tilesets.bmp")
-            self.image = SDL_LoadBMP(self.path.encode('utf-8'))
-            self.bgSurface = SDL_CreateTextureFromSurface(renderer, self.image)
-            SDL_FreeSurface(self.image)
-        
-        def Render(self):
-            ScreenWipe()
-            SDL_RenderCopy(renderer, self.bgSurface, None, None)
+class AnimatedCharacter:
+    def __init__(self, w, h, x, y, renderer, character):
+        self.w = w                      #width
+        self.h = h                      #height
+        self.x = x                      #Character's x position
+        self.y = y                      #Character's y position
+        self.s_x = 0                  #Sprite map x
+        self.s_y = 0                    #Sprite map y
+        self.n = self.s_y
+        self.Moving = False
+        self.Animate = False
+        self.A_Rate = 0
+        self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    "sprites", character)
+        self.image = SDL_LoadBMP(self.path.encode('utf-8'))
+        self.texture = SDL_CreateTextureFromSurface(renderer, self.image)
+        SDL_FreeSurface(self.image)
 
-        def Quit(self):
-            SDL_DestroyTexture(self.bgSurface)
+    def Render(self, renderer):
+        self.s_y = self.n
+        self.src_rect = SDL_Rect(self.s_x, self.s_y, self.w, self.h)
+        self.dest_rect = SDL_Rect(self.x, self.y, 32, 36)           #Scales the Sprite down to size
+        SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect)
 
-    class AnimatedCharacter:
-        def __init__(self, w, h, x, y):
-            self.w = w                      #width
-            self.h = h                      #height
-            self.x = x                      #Character's x position
-            self.y = y                      #Character's y position
-            self.s_x = 5                    #Sprite map x
-            self.s_y = 140                    #Sprite map y
-            self.n = self.s_y
+    def Movement(self, state, direction):
+        self.direction = direction
+        if (state == True):
+            self.Moving = True
+            self.Animate = True
+            if (direction == 'left'):
+                self.x -= 2
+            elif (direction == 'right'):
+                self.x += 2
+            elif (direction == 'down'):
+                self.y += 2
+            elif (direction == 'up'):
+                self.y -= 2
+        elif (state == False):
             self.Moving = False
             self.Animate = False
-            self.A_Rate = 0
-            self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                     "content", "others.bmp")
-            self.image = SDL_LoadBMP(self.path.encode('utf-8'))
-            self.texture = SDL_CreateTextureFromSurface(renderer, self.image)
-            SDL_FreeSurface(self.image)
+    def Animating(self):
+        if self.Animate == True:
+            self.A_Rate += 1
 
-        def Render(self):
-            self.s_y = self.n
-            self.src_rect = SDL_Rect(self.s_x, self.s_y, self.w, self.h)
-            self.dest_rect = SDL_Rect(self.x, self.y, 30, 34)           #Scales the Sprite down to size
-            SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect)
-
-        def Movement(self, state, direction):
-            self.direction = direction
-            if (state == True):
-                self.Moving = True
-                self.Animate = True
-                if (direction == 'left'):
-                    self.x -= 2
-                elif (direction == 'right'):
-                    self.x += 2
-                elif (direction == 'down'):
-                    self.y += 2
-                elif (direction == 'up'):
-                    self.y -= 2
-            elif (state == False):
-                self.Moving = False
-                self.Animate = False
-        def Animating(self):
-            if self.Animate == True:
-                self.A_Rate += 1
-
-            #Animations for Movement and Actions
-            if self.Moving == True:
-                if self.A_Rate == 4:
-                    self.A_Rate = 0
-                    if self.direction == 'left':
-                       self.n = 175
-                       self.s_x += 33
-                       if self.s_x >= 95:
-                           self.s_x = 5
-                    if self.direction == 'right':
-                        self.n = 209
-                        self.s_x += 33
-                        if self.s_x >= 99:
-                            self.s_x = 5
-                    if self.direction == 'up':
-                        self.n = 242
-                        self.s_x += 33
-                        if self.s_x >= 99:
-                            self.s_x = 5
-                    if self.direction == 'down':
-                        self.n = 141
-                        self.s_x += 33
-                        if self.s_x >= 99:
-                            self.s_x = 5
+        #Animations for Movement and Actions
+        if self.Moving == True:
+            if self.A_Rate == 4:
+                self.A_Rate = 0
+                if self.direction == 'left':
+                    self.n = 108
+                    self.s_x += 32
+                    if self.s_x >= 95:
+                        self.s_x = 0
+                if self.direction == 'right':
+                    self.n = 36
+                    self.s_x += 32
+                    if self.s_x >= 95:
+                        self.s_x = 0
+                if self.direction == 'up':
+                    self.n = 0
+                    self.s_x += 32
+                    if self.s_x >= 95:
+                        self.s_x = 0
+                if self.direction == 'down':
+                    self.n = 72
+                    self.s_x += 32
+                    if self.s_x >= 95:
+                        self.s_x = 0
 
 
-        def Quit(self):
-            SDL_DestroyTexture(self.texture)
+    def Quit(self):
+        SDL_DestroyTexture(self.texture)
 
     class NPC:
-        def __init__(self, w, h, x, y):
+        def __init__(self, w, h, x, y, renderer):
             self.w = w                      #width
             self.h = h                      #height
             self.x = x                      #Character's x position
@@ -133,7 +118,7 @@ def main():
             self.texture = SDL_CreateTextureFromSurface(renderer, self.image)
             SDL_FreeSurface(self.image)
 
-        def Render(self):
+        def Render(self, renderer):
             self.s_y = self.n
             self.src_rect = SDL_Rect(self.s_x, self.s_y, self.w, self.h)
             self.dest_rect = SDL_Rect(self.x, self.y, 30, 33)
@@ -141,32 +126,128 @@ def main():
 
         def Quit(self):
             SDL_DestroyTexture(self.texture)
-    #________________OBJECTS______________________________#
-    background = Background(WIDTH, HEIGHT, 0, 0)
 
-    #________________FUNCTIONS____________________________#
-    def ScreenPresent():
-        SDL_RenderPresent(renderer)
+class TextObject:
+    fonts = dict()
+    def __init__(self, renderer, text, width, height, font_name, color = (0, 0, 0), location = (0, 0), font_size = 36):
+        self.r = renderer
+        if len(font_name) > 1:
+            TextObject.fonts[font_name[0]] = TTF_OpenFont(font_name[1], font_size)
+        self.color = SDL_Color(color[0], color[1], color[2])
+        self.surface = TTF_RenderText_Solid(TextObject.fonts[font_name[0]], text.encode('utf-8'), self.color)
+        self.message = SDL_CreateTextureFromSurface(self.r, self.surface)
+        SDL_FreeSurface(self.surface)
+        self.rect = SDL_Rect(location[0], location[1], width, height)
+        self.highlight = False
+        SDL_SetTextureBlendMode(self.message, SDL_BLENDMODE_BLEND)
 
-    def ScreenWipe():
-        SDL_RenderClear(renderer)
+    def Render(self, x=None, y=None, alpha = 255):
+        if self.highlight:
+            SDL_SetRenderDrawColor(self.r, self.color.r, self.color.g, self.color.b, self.color.a)
+            SDL_RenderDrawRect(self.r, self.rect)
+        if x is None and y:
+            self.rect.y = y
+        elif x and y is None:
+            self.rect.x = x
+        elif x and y:
+            self.rect.x = x
+            self.rect.y = y
+        SDL_SetTextureAlphaMod(self.message, alpha)
+        SDL_RenderCopy(self.r, self.message, None, self.rect)
 
-    def WindowState(fs):
-        if (fs == True):
-            SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN)
-        elif (fs == False):
-            SDL_SetWindowFullscreen(window, 0)
+    def __del__(self):
+        for keys in list(TextObject.fonts):
+            font = TextObject.fonts.pop(keys, None)
+            if font: TTF_CloseFont(font)
+        SDL_DestroyTexture(self.message)
 
-    #def TPS(T_rate):
-    #    start_time_ms = int(SDL_GetTicks())
-    #    elapsed_time_ms = int(SDL_GetTicks() - start_time_ms)
-    #    SDL_Delay(1000//T_rate - elapsed_time_ms)
-    #    seconds_per_frame = (SDL_GetTicks() - start_time_ms) / 1000
-    #    ticks = 1 // seconds_per_frame
-    #    print(ticks)
+class Pointer:
+    cursors = dict()
+
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+        self.pointer = SDL_Rect(0, 0, 10, 10)
+        self.clicking = False
+        self.r_clicking = False
+
+    def Compute(self, event):
+        self.clicking = False
+        self.r_clicking = False
+
+        if (event.type == SDL_MOUSEBUTTONDOWN):
+            if (event.button.button == SDL_BUTTON_LEFT):
+                self.clicking = True
+
+            if (event.button.button == SDL_BUTTON_RIGHT):
+                self.r_clicking = True
+        
+        if (event.type == SDL_MOUSEBUTTONUP):
+            if (event.button.button == SDL_BUTTON_LEFT):
+                self.clicking = False
+            
+            if (event.button.button == SDL_BUTTON_RIGHT):
+                self.r_clicking = False
+
+        if (event.type == SDL_MOUSEMOTION):
+            self.pointer.x = event.motion.x
+            self.pointer.y = event.motion.y
+
+        self.x = self.pointer.x
+        self.y = self.pointer.y
+
+    def Is_Touching_Rect(self, rect): #version for rectangles
+        return SDL_HasIntersection(self.pointer, rect)
+
+    def Is_Clicking_Rect(self, rect):
+        return self.Is_Touching_Rect(rect) and self.clicking
+
+    def Is_Touching(self, item):
+        return self.Is_Touching_Rect(item.rect)
+
+    def Is_Clicking(self, item):
+        return self.Is_Touching(item) and self.clicking
+
+
+    def Is_R_Clicking(self, item):
+        return self.Is_Touching(item) and self.r_clicking
+
+    def Set_Cursor(self, id):
+        if id not in Pointer.cursors:
+            Pointer.cursors[id] = SDL_CreateSystemCursor(id)
+        SDL_SetCursor(Pointer.cursors[id])
+
+    def __del__(self):
+        for cursor in Pointer.cursors:
+            SDL_FreeCursor(Pointer.cursors[cursor])
+
+#________________FUNCTIONS____________________________#
+def ScreenPresent(renderer):
+    SDL_RenderPresent(renderer)
+
+def ScreenWipe(renderer):
+    SDL_RenderClear(renderer)
+
+def WindowState(window, renderer, fs):
+    if (fs == True):
+        SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN)
+    elif (fs == False):
+        SDL_SetWindowFullscreen(window, 0)
+
+#def TPS(T_rate):
+#    start_time_ms = int(SDL_GetTicks())
+#    elapsed_time_ms = int(SDL_GetTicks() - start_time_ms)
+#    SDL_Delay(1000//T_rate - elapsed_time_ms)
+#    seconds_per_frame = (SDL_GetTicks() - start_time_ms) / 1000
+#    ticks = 1 // seconds_per_frame
+#    print(ticks)
 
 def main():
     SDL_Init(SDL_INIT_VIDEO)
+    if (TTF_Init < 0):
+        print(TTF_GetError())
+        return -1
+
     #__________________VARIABLES_________________________#
     running = True
     WIDTH = 640
@@ -175,7 +256,7 @@ def main():
     char_selection = ""
     player = None
     Fullscreen = False
-    gamestate = ""
+    gamestate = "MENU"
 
     #_______________Window and Renderer___________________#
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, b'opengl')
@@ -185,9 +266,14 @@ def main():
     SDL_ShowCursor(0)
     
     #________________OBJECTS______________________________#
-    
-    if (char_selection):
-        player = AnimatedCharacter(32, 36, 0, 0, char_selection)
+
+    menu_items = {
+        "New Game": TextObject(renderer, "New Game", 200, 50, ['arcade', b'font/arcade.ttf'], location=(280, 320)),
+        "Load Game": TextObject(renderer, "Load Game", 200, 50, ['arcade'], location=(280, 370))
+    }
+
+    if (player):
+        player = AnimatedCharacter(32, 36, 0, 0, renderer, character_selection)
 
     #______________GENERAL PROCESSING______________________#
     event = SDL_Event()
@@ -228,24 +314,43 @@ def main():
             running = False
             
         # ________________________________________________#
-        WindowState(Fullscreen)
+        WindowState(window, renderer, Fullscreen)
         #___________________________________________________#
         while (SDL_PollEvent(ctypes.byref(event))):
             if (event.type == SDL_QUIT):
                 SDL_DestroyRenderer(renderer)
-                background.Quit()
+                #background.Quit()
                 SDL_DestroyWindow(window)
                 running = False
                 break
 
         #LOGIC__________________________________________________#
+        if (gamestate == "MENU"):
+            pass
+
+        if (player):
+            player.Movement(movement, direction)
+            player.Animating()
+        
+
 
         #RENDERING______________________________________________#
-        ScreenWipe()
-        background.Render()
-        ScreenPresent()
+        SDL_SetRenderDrawColor(renderer, 220, 220, 220, 255)
+        SDL_RenderClear(renderer)
+        
+        if (gamestate == "MENU"):
+            
+            for item in menu_items:
+                menu_items[item].Render()
+        
+        if (gamestate == "SELECTION"):
+            pass
+
+       # background.Render()
+        ScreenPresent(renderer)
 
     SDL_Quit()
+    TTF_Quit()
     return 0
     #_____________
 main()
