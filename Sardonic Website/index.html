@@ -10,6 +10,8 @@
     <link href="css/font-awesome.min.css" rel="stylesheet">
     <link href="css/bootstrap-social.css" rel="stylesheet">
     <link href="css/shawnstyles.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/foundation.css">
+    <link rel="stylesheet" href="css/app.css">
 </head>
 
 <body class="body"> 
@@ -39,21 +41,37 @@
             </div>
         </div>
     </nav>
-    <header>
+    <header class="jumbotron-content">
         <div class="container">
-            <div class="jumbotron-content">
-                <p style="padding: 40px;"</p>
-                <h1 align="center" style="color:white;">Sardonic Coders <img src="SC5.png" width="200"/></h1>
-            </div>
+            <h1 align="center" style="color: whitesmoke;">Sardonic Coders <img src="SC5.png" width="200"/></h1>
         </div>
     </header>
     <div class="container">
         <div class="row row-content">
-                <h1>Dokutsu Project <span class="badge">WIP</span></h1>
-                Watch our progress<a href="https://github.com/Dexsidius/DIRepo"> here </a>
+                <div class="container">
+                    <h3>Projects</h3>
+                    <ul class="accordion" data-accordion>
+                        <li class="accordion-item is-active" data-accordion-item>
+                            <a class="accordion-title">Gaming Projects</a>
+                            <div class="accordion-content" data-tab-content>
+                                <div id="Dokutsu" class="tab-pane fade in active">
+                                    <h1>Dokutsu Project <span class="badge">WIP</span></h1>
+                                    <a href="https://github.com/Dexsidius/DIRepo">Watch our progress here </a>
+                                </div>
+                            </div>
+                        </li>
+                        <li><a href="#">Menu 1</a></li>
+                        <li><a href="#">Menu 2</a></li>
+                        <li><a href="#">Menu 3</a></li>
+                    </ul>
+                </div>
         </div>
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
+    <script src="js/vendor/jquery.js"></script>
+    <script src="js/vendor/what-input.js"></script>
+    <script src="js/vendor/foundation.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>

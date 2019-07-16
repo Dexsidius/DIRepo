@@ -5,7 +5,7 @@
 }
 
 .body{
-    background: #000000;
+    background-color: rgb(66, 16, 16)
 
 }
 
@@ -19,6 +19,7 @@
 .row-content{
     border-bottom: 5px double black;
     padding-bottom: 5px;
+    color: whitesmoke;
 }
 
 .navbar-inverse {
