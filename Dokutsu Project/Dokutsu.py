@@ -261,7 +261,6 @@ def main():
     WIDTH = 640
     HEIGHT = 480
     TickRate = 60
-    char_selection = ""
     player = None
     Fullscreen = False
     gamestate = 'MENU'
@@ -283,7 +282,23 @@ def main():
         "Load Game": TextObject(renderer, "Load Game", 200, 50, ['joystix'], location=(240, 320))
     }
 
-    characters = GetCharacters()
+    choice = {
+        "Yes": TextObject(renderer, "Yes", 100, 50, ['joystix'], location=(200, 300)),
+        "No": TextObject(renderer, "No", 100, 50, ['joystix'], location=(300, 300))
+    }
+
+    sprite_list = GetCharacters()
+    characters = []
+    character_selection = None
+    character_selection_list = dict()
+
+    xs = 0
+    for c in sprite_list:
+        character_selection_list[c] = TextObject(renderer, c, 100, 25, ['joystix'], location=(250, 260 - xs))
+        xs += 25
+
+    for c in sprite_list:
+        characters.append(c)
 
     if (player):
         player = AnimatedCharacter(32, 36, 0, 0, renderer, character_selection)
@@ -347,12 +362,32 @@ def main():
                 else:
                     menu_items[item].highlight = False
                 
-                if (mouse.Is_Clicking(menu_items[item])):
-                    if (item == "NEW GAME"):
-                        gamestate == 'CHARACTER SELECTION'
+                if (mouse.Is_Clicking(menu_items["New Game"])):
+                    gamestate = 'CHARACTER SELECTION'
 
         if (gamestate == 'CHARACTER SELECTION'):
-            pass
+            for character in character_selection_list:
+                if (mouse.Is_Touching(character_selection_list[character])):
+                    character_selection_list[character].highlight = True
+                else:
+                    character_selection_list[character].highlight = False
+                
+                if (mouse.Is_Clicking(character_selection_list[character])):
+                    character_selection = character
+            
+            for c in choice:
+                if (mouse.Is_Touching(choice[c])):
+                    choice[c].highlight = True
+                else:
+                    choice[c].highlight = False
+                
+                if (mouse.Is_Clicking(choice[c])):
+                    if c == "Yes":
+                        gamestate = 'GAME'
+                    else:
+                        character_selection = None
+
+                    
 
         if (gamestate == 'GAME'):
             if (player):
@@ -370,7 +405,15 @@ def main():
                 menu_items[item].Render()
         
         if (gamestate == 'CHARACTER SELECTION'):
-            pass
+            SDL_RenderClear(renderer)
+            
+            for c in character_selection_list:
+                character_selection_list[c].Render()
+
+            if (character_selection):
+                for c in choice:
+                    choice[c].Render()
+        
 
 
        # background.Render()
