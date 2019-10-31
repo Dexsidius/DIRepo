@@ -238,7 +238,7 @@ def GetCharacters():
     resources = dict()
     for path in os.listdir('sprites'):
         c = path.split(".bmp")
-        resources[c[0]] = c
+        resources[c[0]] = path
     
     return resources
 
@@ -300,8 +300,6 @@ def main():
     for c in sprite_list:
         characters.append(c)
 
-    if (player):
-        player = AnimatedCharacter(32, 36, 0, 0, renderer, character_selection)
 
     #______________GENERAL PROCESSING______________________#
     event = SDL_Event()
@@ -383,11 +381,11 @@ def main():
                 
                 if (mouse.Is_Clicking(choice[c])):
                     if c == "Yes":
+                        print(sprite_list[character_selection])
+                        player = AnimatedCharacter(32, 36, 0, 0, renderer, sprite_list[character_selection])
                         gamestate = 'GAME'
                     else:
                         character_selection = None
-
-                    
 
         if (gamestate == 'GAME'):
             if (player):
@@ -413,6 +411,10 @@ def main():
             if (character_selection):
                 for c in choice:
                     choice[c].Render()
+
+        if (gamestate == 'GAME'):
+            player.Render(renderer)
+
         
 
 
