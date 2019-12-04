@@ -18,10 +18,11 @@ class Background:
         self.s_y = 0
         self.n = self.s_y
         self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                    "sprites", ".bmp")
+                                    "maps", ".bmp")
         self.image = SDL_LoadBMP(self.path.encode('utf-8'))
         self.bgSurface = SDL_CreateTextureFromSurface(renderer, self.image)
         SDL_FreeSurface(self.image)
+
     
     def Render(self, renderer):
         ScreenWipe(renderer)
@@ -29,6 +30,109 @@ class Background:
 
     def Quit(self):
         SDL_DestroyTexture(self.bgSurface)
+
+class TextureCache:
+    def __init__(self, renderer):
+        self.renderer = renderer
+        self._cache = dict()
+
+    def LoadTexture(self, filepath):
+        if filepath not in self._cache:
+            surface = SDL_LoadBMP(filepath.encode('utf-8'))
+            self._cache[filepath] = SDL_CreateTextureFromSurface(self.renderer, surface)
+            SDL_FreeSurface(surface)
+            SDL_SetTextureBlendMode(self._cache[filepath], SDL_BLENDMODE_BLEND)
+        return self._cache[filepath]
+
+class Scene:
+    def __init__(self, b_cache):
+        self.c = b_cache
+        self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                        "Maps", ".mx")
+
+    def CreateScene(self, cache, filepath):
+    #This function loads the map created from the ".mx" file specified.
+        global tile_name
+        global tile_filepath
+
+        if not filepath.endswith('.mx'):
+            return 0
+
+        file = open(filepath, 'r')
+        tile_name = ''
+        tile_filepath = ''
+        for line in file:
+            section = line.split('|')
+            if (section[0] == '*'):
+                subsect = section[1].split(':')
+                tile_name = subsect[0]
+                tile_filepath = subsect[1]
+
+            elif (section[0] == '+'):
+                tiles_information_list = section[1].split(',')
+                for tile_info in tiles_information_list:
+                    tile_xywh = tile_info.split('-')
+                    if (len(tile_xywh) < 4):
+                        pass
+                    else:
+                        x = int(tile_xywh[0])
+                        y = int(tile_xywh[1])
+                        w = int(tile_xywh[2])
+                        h = int(tile_xywh[3])
+                    
+                    if tile_name not in self.c:
+                        self.c[tile_name] = [GameTile(cache, tile_filepath, x, y, w, h)]
+                    else:
+                        self.c[tile_name].append(GameTile(cache, tile_filepath, x, y, w, h))
+                    
+        file.close()
+
+        return self.c
+        
+
+class GameTile:
+    def __init__(self, cache, filepath, x, y, w, h):
+        self.c = cache
+        self.name = filepath.split('.bmp')[0]
+        self.texture = self.c.LoadTexture(filepath)
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.rect = SDL_Rect(self.x, self.y, self.w, self.h)
+
+    def Render(self, camera_pos = (0,0), alpha = 255):
+        self.rect.x = (self.x - (self.w//2)) + camera_pos[0]
+        self.rect.y = (self.y - (self.h//2)) + camera_pos[1]
+        self.rect.w = self.w
+        self.rect.h = self.h
+        SDL_SetTextureAlphaMod(self.texture, alpha)
+        SDL_RenderCopy(self.c.renderer, self.texture, None, self.rect)
+
+    def SetPos(self, x, y):
+        self.x = x
+        self.y = y
+
+    def GetPos(self):
+        return (self.x, self.y)
+
+    def Collide(self): #Either making a function to handle solid and soft tiles or make an entirely different class just for GameObjects
+        pass
+
+    def GetInfo(self):
+        return (self.x, self.y, self.w, self.h)
+
+class Camera:
+    def __init__(self, w, h, speed, cs = 40):
+        self.x = 0
+        self.y = 0
+        self.speed = speed
+        self.cs = cs
+        self._rect = SDL_Rect(self.cs // 2, self.cs // 2, w - self.cs, h - self.cs)
+
+    def Show(self, renderer):
+        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255)
+        SDL_RenderDrawRect(renderer, self._rect)
 
 class AnimatedCharacter:
     def __init__(self, w, h, x, y, renderer, character):
@@ -104,7 +208,7 @@ class AnimatedCharacter:
         SDL_DestroyTexture(self.texture)
 
     class NPC:
-        def __init__(self, w, h, x, y, renderer):
+        def __init__(self, w, h, x, y, renderer, npc):
             self.w = w                      #width
             self.h = h                      #height
             self.x = x                      #Character's x position
@@ -113,7 +217,7 @@ class AnimatedCharacter:
             self.s_y = 0                    #Sprite map y
             self.n = self.s_y
             self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                     "content", "others.bmp")
+                                     "sprites", npc)
             self.image = SDL_LoadBMP(self.path.encode('utf-8'))
             self.texture = SDL_CreateTextureFromSurface(renderer, self.image)
             SDL_FreeSurface(self.image)
@@ -243,12 +347,12 @@ def GetCharacters():
     return resources
 
 #def TPS(T_rate):
-#    start_time_ms = int(SDL_GetTicks())
-#    elapsed_time_ms = int(SDL_GetTicks() - start_time_ms)
-#    SDL_Delay(1000//T_rate - elapsed_time_ms)
-#    seconds_per_frame = (SDL_GetTicks() - start_time_ms) / 1000
-#    ticks = 1 // seconds_per_frame
-#    print(ticks)
+    #start_time_ms = int(SDL_GetTicks())
+    #elapsed_time_ms = int(SDL_GetTicks() - start_time_ms)
+    #SDL_Delay(1000//T_rate - elapsed_time_ms)
+    #seconds_per_frame = (SDL_GetTicks() - start_time_ms) / 1000
+    #ticks = 1 // seconds_per_frame
+    #return ticks
 
 def main():
     SDL_Init(SDL_INIT_VIDEO)
@@ -264,6 +368,10 @@ def main():
     player = None
     Fullscreen = False
     gamestate = 'MENU'
+    sprite_list = GetCharacters()
+    characters = []
+    character_selection = None
+    character_selection_list = dict()
 
     #_______________Window and Renderer___________________#
     mouse = Pointer()
@@ -287,10 +395,9 @@ def main():
         "No": TextObject(renderer, "No", 100, 50, ['joystix'], location=(300, 300))
     }
 
-    sprite_list = GetCharacters()
-    characters = []
-    character_selection = None
-    character_selection_list = dict()
+    cache = TextureCache(renderer)
+    camera = Camera(WIDTH, HEIGHT, speed = 3)
+
 
     xs = 0
     for c in sprite_list:
@@ -307,7 +414,7 @@ def main():
         direction = ''
         movement = False
         #TICK_RATE__________________________________________#
-        #TPS(TickRate)
+        #ticks = TPS(TickRate)
 
         #EVENTS_____________________________________________#
         #___KeyEvents_______________________________________#
@@ -372,6 +479,7 @@ def main():
                 
                 if (mouse.Is_Clicking(character_selection_list[character])):
                     character_selection = character
+                    preview = AnimatedCharacter(32, 32, 200, HEIGHT - 50, renderer, sprite_list[character_selection])
             
             for c in choice:
                 if (mouse.Is_Touching(choice[c])):
@@ -388,6 +496,8 @@ def main():
                         character_selection = None
 
         if (gamestate == 'GAME'):
+            scene = Scene(dict())
+            One = scene.CreateScene(cache, 'Maps/NPCtest.mx')
             if (player):
                 player.Movement(movement, direction)
                 player.Animating()
@@ -409,13 +519,22 @@ def main():
                 character_selection_list[c].Render()
 
             if (character_selection):
+                preview.Render(renderer)
+                preview.Movement(True, 'right')
+                preview.Animating()
+                if preview.x > WIDTH:
+                    preview.x = -1
                 for c in choice:
                     choice[c].Render()
 
         if (gamestate == 'GAME'):
+            SDL_RenderClear(renderer)
+            for tiles in One:
+                for piece in One[tiles]:
+                    piece.Render()
+            camera.Show(renderer)
             player.Render(renderer)
-
-        
+            
 
 
        # background.Render()
