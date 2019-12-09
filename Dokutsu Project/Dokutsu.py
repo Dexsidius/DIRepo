@@ -50,7 +50,7 @@ class Scene:
         self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                         "Maps", ".mx")
 
-    def CreateScene(self, cache, filepath):
+    def CreateScene(self, cache, renderer, filepath, player, npc, solid):
     #This function loads the map created from the ".mx" file specified.
         global tile_name
         global tile_filepath
@@ -79,11 +79,24 @@ class Scene:
                         y = int(tile_xywh[1])
                         w = int(tile_xywh[2])
                         h = int(tile_xywh[3])
-                    
-                    if tile_name not in self.c:
+
+                    if tile_name == 'player':
+                        player.x = x
+                        player.y = y
+                    elif tile_name == 'npc':
+                        if tile_name not in self.c:
+                            self.c[tile_name] = [NPC(32, 32, x, y, renderer, 'townfolk1_f.bmp')]
+                    elif tile_name == 'npc2':
+                        if tile_name not in self.c:
+                            self.c[tile_name] = [NPC(32, 32, x, y, renderer, 'townfolk1_m.bmp')]
+                    elif tile_name == 'npc3':
+                        if tile_name not in self.c:
+                            self.c[tile_name] = [NPC(32, 32, x, y, renderer, 'warrior_f.bmp')]
+                    elif tile_name not in self.c:
                         self.c[tile_name] = [GameTile(cache, tile_filepath, x, y, w, h)]
                     else:
                         self.c[tile_name].append(GameTile(cache, tile_filepath, x, y, w, h))
+                    
                     
         file.close()
 
@@ -123,10 +136,12 @@ class GameTile:
         return (self.x, self.y, self.w, self.h)
 
 class Camera:
-    def __init__(self, w, h, speed, cs = 40):
+    def __init__(self, w, h, speed, p = None, cs = 40 ):
         self.x = 0
         self.y = 0
         self.speed = speed
+        self.p = p
+        self.last_pos = (p.x, p.y)
         self.cs = cs
         self._rect = SDL_Rect(self.cs // 2, self.cs // 2, w - self.cs, h - self.cs)
 
@@ -134,14 +149,21 @@ class Camera:
         SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255)
         SDL_RenderDrawRect(renderer, self._rect)
 
+    def Process(self):
+        self.x -= self.p.x - self.last_pos[0]
+        self.y -= self.p.y - self.last_pos[1]
+        self.last_pos = (self.p.x, self.p.y)
+
+
 class AnimatedCharacter:
-    def __init__(self, w, h, x, y, renderer, character):
+    def __init__(self, w, h, x, y, renderer, character, camera_pos = (0, 0)):
         self.w = w                      #width
         self.h = h                      #height
         self.x = x                      #Character's x position
         self.y = y                      #Character's y position
         self.s_x = 0                  #Sprite map x
         self.s_y = 0                    #Sprite map y
+        self.dest_rect = SDL_Rect(self.x + camera_pos[0], self.y + camera_pos[1], 32, 36)
         self.n = self.s_y
         self.Moving = False
         self.Animate = False
@@ -152,11 +174,17 @@ class AnimatedCharacter:
         self.texture = SDL_CreateTextureFromSurface(renderer, self.image)
         SDL_FreeSurface(self.image)
 
-    def Render(self, renderer):
+    def Render(self, renderer, camera_pos = (0, 0)):
         self.s_y = self.n
         self.src_rect = SDL_Rect(self.s_x, self.s_y, self.w, self.h)
-        self.dest_rect = SDL_Rect(self.x, self.y, 32, 36)           #Scales the Sprite down to size
+        self.dest_rect = SDL_Rect(self.x + camera_pos[0], self.y + camera_pos[1], 32, 36)           #Scales the Sprite down to size
         SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect)
+    
+    def Is_Touching_Rect(self, rect): #version for rectangles
+        return SDL_HasIntersection(self.dest_rect, rect)
+    
+    def Is_Touching(self, item):
+        return self.Is_Touching_Rect(item.dest_rect)
 
     def Movement(self, state, direction):
         self.direction = direction
@@ -207,29 +235,33 @@ class AnimatedCharacter:
     def Quit(self):
         SDL_DestroyTexture(self.texture)
 
-    class NPC:
-        def __init__(self, w, h, x, y, renderer, npc):
-            self.w = w                      #width
-            self.h = h                      #height
-            self.x = x                      #Character's x position
-            self.y = y                      #Character's y position
-            self.s_x = 0                    #Sprite map x        
-            self.s_y = 0                    #Sprite map y
-            self.n = self.s_y
-            self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                     "sprites", npc)
-            self.image = SDL_LoadBMP(self.path.encode('utf-8'))
-            self.texture = SDL_CreateTextureFromSurface(renderer, self.image)
-            SDL_FreeSurface(self.image)
+class NPC:
+    def __init__(self, w, h, x, y, renderer, npc, camera_pos = (0, 0)):
+        self.w = w                      #width
+        self.h = h                      #height
+        self.x = x                      #Character's x position
+        self.y = y                      #Character's y position
+        self.s_x = 32                   #Sprite map x        
+        self.s_y = 74                   #Sprite map y
+        self.n = self.s_y
+        self.dest_rect = SDL_Rect(self.x + camera_pos[0], self.y + camera_pos[1], 30, 33)
+        self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    "npcs", npc)
+        self.image = SDL_LoadBMP(self.path.encode('utf-8'))
+        self.texture = SDL_CreateTextureFromSurface(renderer, self.image)
+        SDL_FreeSurface(self.image)
 
-        def Render(self, renderer):
-            self.s_y = self.n
-            self.src_rect = SDL_Rect(self.s_x, self.s_y, self.w, self.h)
-            self.dest_rect = SDL_Rect(self.x, self.y, 30, 33)
-            SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect)
+    def Render(self, renderer, camera_pos=(0, 0)):
+        self.s_y = self.n
+        self.src_rect = SDL_Rect(self.s_x, self.s_y, self.w, self.h)
+        self.dest_rect = SDL_Rect(self.x + camera_pos[0], self.y + camera_pos[1], 30, 33)
+        SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect)
 
-        def Quit(self):
-            SDL_DestroyTexture(self.texture)
+    def Update(self, camera_pos = (0,0)):
+        self.dest_rect = SDL_Rect(self.x + camera_pos[0], self.y + camera_pos[1], 30, 33)
+
+    def Quit(self):
+        SDL_DestroyTexture(self.texture)
 
 class TextObject:
     fonts = dict()
@@ -396,7 +428,7 @@ def main():
     }
 
     cache = TextureCache(renderer)
-    camera = Camera(WIDTH, HEIGHT, speed = 3)
+    
 
 
     xs = 0
@@ -489,20 +521,25 @@ def main():
                 
                 if (mouse.Is_Clicking(choice[c])):
                     if c == "Yes":
-                        print(sprite_list[character_selection])
-                        player = AnimatedCharacter(32, 36, 0, 0, renderer, sprite_list[character_selection])
+                        player = AnimatedCharacter(32, 36, WIDTH//2, HEIGHT//2, renderer, sprite_list[character_selection])
                         gamestate = 'GAME'
                     else:
                         character_selection = None
+                    camera = Camera(WIDTH, HEIGHT, speed = 3, p = player)
+                    scene = Scene(dict())
+                    SceneOne = scene.CreateScene(cache, renderer, 'Maps/Game-1.mx', player, None, None)
 
         if (gamestate == 'GAME'):
-            scene = Scene(dict())
-            One = scene.CreateScene(cache, 'Maps/NPCtest.mx')
             if (player):
                 player.Movement(movement, direction)
                 player.Animating()
-        
+                camera.Process()
 
+            for items in SceneOne:
+                    for stuff in SceneOne[items]:
+                        if items == 'npc' or items == 'npc2' or items == 'npc3':
+                            if (player.Is_Touching(stuff)):
+                                player.Moving = False
 
         #RENDERING______________________________________________#
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255)
@@ -529,11 +566,20 @@ def main():
 
         if (gamestate == 'GAME'):
             SDL_RenderClear(renderer)
-            for tiles in One:
-                for piece in One[tiles]:
-                    piece.Render()
+            for tiles in SceneOne:
+                for piece in SceneOne[tiles]:
+                    if tiles == 'player':
+                        piece.Render(renderer)
+                    elif tiles == 'npc':
+                        piece.Render(renderer, (camera.x, camera.y))
+                    elif tiles == 'npc2':
+                        piece.Render(renderer,(camera.x, camera.y))
+                    elif tiles == 'npc3':
+                        piece.Render(renderer, (camera.x, camera.y))
+                    else:
+                        piece.Render(camera_pos=(camera.x, camera.y))
             camera.Show(renderer)
-            player.Render(renderer)
+            player.Render(renderer, camera_pos=(camera.x, camera.y))
             
 
 
