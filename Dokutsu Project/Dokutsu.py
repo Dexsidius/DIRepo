@@ -6,6 +6,7 @@ from sdl2 import *
 from sdl2.sdlttf import *
 import sdl2.ext
 import ctypes
+import math
 
 #________________CLASSES______________________________#
 class Background:
@@ -86,12 +87,18 @@ class Scene:
                     elif tile_name == 'npc':
                         if tile_name not in self.c:
                             self.c[tile_name] = [NPC(32, 32, x, y, renderer, 'townfolk1_f.bmp')]
+                        else:
+                            self.c[tile_name].append(NPC(32, 32, x, y, renderer, 'townfolk1_f.bmp'))
                     elif tile_name == 'npc2':
                         if tile_name not in self.c:
                             self.c[tile_name] = [NPC(32, 32, x, y, renderer, 'townfolk1_m.bmp')]
+                        else:
+                            self.c[tile_name].append(NPC(32, 32, x, y, renderer, 'townfolk1_m.bmp'))
                     elif tile_name == 'npc3':
                         if tile_name not in self.c:
                             self.c[tile_name] = [NPC(32, 32, x, y, renderer, 'warrior_f.bmp')]
+                        else:
+                            self.c[tile_name].append(NPC(32, 32, x, y, renderer, 'warrior_f.bmp'))
                     elif tile_name not in self.c:
                         self.c[tile_name] = [GameTile(cache, tile_filepath, x, y, w, h)]
                     else:
@@ -129,9 +136,6 @@ class GameTile:
     def GetPos(self):
         return (self.x, self.y)
 
-    def Collide(self): #Either making a function to handle solid and soft tiles or make an entirely different class just for GameObjects
-        pass
-
     def GetInfo(self):
         return (self.x, self.y, self.w, self.h)
 
@@ -161,13 +165,13 @@ class AnimatedCharacter:
         self.h = h                      #height
         self.x = x                      #Character's x position
         self.y = y                      #Character's y position
-        self.s_x = 0                  #Sprite map x
+        self.s_x = 0                    #Sprite map x
         self.s_y = 0                    #Sprite map y
-        self.dest_rect = SDL_Rect(self.x + camera_pos[0], self.y + camera_pos[1], 32, 36)
         self.n = self.s_y
         self.Moving = False
         self.Animate = False
         self.A_Rate = 0
+        self.dest_rect = SDL_Rect(self.x + camera_pos[0], self.y + camera_pos[1], 30, 32)
         self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                     "sprites", character)
         self.image = SDL_LoadBMP(self.path.encode('utf-8'))
@@ -177,14 +181,9 @@ class AnimatedCharacter:
     def Render(self, renderer, camera_pos = (0, 0)):
         self.s_y = self.n
         self.src_rect = SDL_Rect(self.s_x, self.s_y, self.w, self.h)
-        self.dest_rect = SDL_Rect(self.x + camera_pos[0], self.y + camera_pos[1], 32, 36)           #Scales the Sprite down to size
+        self.dest_rect = SDL_Rect(self.x + camera_pos[0], self.y + camera_pos[1], 30, 32)           #Scales the Sprite down to size
+        SDL_RenderFillRect(renderer, self.dest_rect)
         SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect)
-    
-    def Is_Touching_Rect(self, rect): #version for rectangles
-        return SDL_HasIntersection(self.dest_rect, rect)
-    
-    def Is_Touching(self, item):
-        return self.Is_Touching_Rect(item.dest_rect)
 
     def Movement(self, state, direction):
         self.direction = direction
@@ -235,6 +234,69 @@ class AnimatedCharacter:
     def Quit(self):
         SDL_DestroyTexture(self.texture)
 
+class AnimatedButton:
+    def __init__(self, w, h, x, y, renderer, button):
+        self.w = w
+        self.h = h
+        self.x = x
+        self.y = y
+        self.s_x = 0
+        self.s_y = 0
+        self.n = self.s_y
+        self.Animate = True
+        self.A_Rate = 0
+        self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                                            "resources", button)
+        self.image = SDL_LoadBMP(self.path.encode('utf-8'))
+        self.texture = SDL_CreateTextureFromSurface(renderer, self.image)
+        SDL_FreeSurface(self.image)
+
+    def Animating(self):
+        if self.Animate == True:
+            self.A_Rate += 1
+            
+
+        #Animations for Movement and Actions
+        if self.Animate == True:
+            if self.A_Rate == 4:
+                self.A_Rate = 0
+                if self.n == 0:
+                    self.s_x += 20
+                    if self.s_x >= 80:
+                        self.s_x = 0
+
+    def Render(self, renderer):
+        self.s_y = self.n
+        self.src_rect = SDL_Rect(self.s_x, self.s_y, self.w, self.h)
+        self.dest_rect = SDL_Rect(self.x, self.y, 24, 27)
+        SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect)
+    
+    def Quit(self):
+        SDL_DestroyTexture(self.texture)
+
+class PausedMenu:
+    def __init__(self, w, h, x, y, renderer, pmenu, menu):
+        self.w = w
+        self.h = h
+        self.x = x
+        self.y = y 
+        self.menu = menu
+        self.s_x = 0
+        self.s_y = 0
+        self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                                            "resources", pmenu)
+        self.image = SDL_LoadBMP(self.path.encode('utf-8'))
+        self.texture = SDL_CreateTextureFromSurface(renderer, self.image)
+        SDL_FreeSurface(self.image)
+
+    def Render(self, renderer):
+        self.src_rect = SDL_Rect(self.s_x, self.s_y, self.w, self.h)
+        self.dest_rect = SDL_Rect(self.x, self.y, self.w, self.h + 200)
+        SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect)
+        for items in self.menu:
+            items.Render()
+
+
 class NPC:
     def __init__(self, w, h, x, y, renderer, npc, camera_pos = (0, 0)):
         self.w = w                      #width
@@ -256,9 +318,6 @@ class NPC:
         self.src_rect = SDL_Rect(self.s_x, self.s_y, self.w, self.h)
         self.dest_rect = SDL_Rect(self.x + camera_pos[0], self.y + camera_pos[1], 30, 33)
         SDL_RenderCopy(renderer, self.texture, self.src_rect, self.dest_rect)
-
-    def Update(self, camera_pos = (0,0)):
-        self.dest_rect = SDL_Rect(self.x + camera_pos[0], self.y + camera_pos[1], 30, 33)
 
     def Quit(self):
         SDL_DestroyTexture(self.texture)
@@ -357,6 +416,35 @@ class Pointer:
         for cursor in Pointer.cursors:
             SDL_FreeCursor(Pointer.cursors[cursor])
 
+class Time:
+    def __init__(self, game_time = 0, T_rate = 120, seconds = 0, minutes = 0, hour = 0):
+        self.miliseconds = game_time
+        self.seconds = seconds
+        self.minutes = minutes
+        self.hour = hour
+
+    def Process(self):
+        if self.miliseconds % 1000 == 0:
+            self.seconds += 1
+        if self.seconds == 60:
+            self.minutes += 1
+            self.seconds == 0
+        if self.minutes == 60:
+            self.hour += 1
+            self.minutes == 0
+    
+    def TPS(self, T_rate):
+        start_time_ms = int(SDL_GetTicks())
+        elapsed_time_ms = int(SDL_GetTicks() - start_time_ms)
+        SDL_Delay(1000//T_rate - elapsed_time_ms)
+        seconds_per_frame = (SDL_GetTicks() - start_time_ms) / 1000
+        ticks = 1 // seconds_per_frame
+        return start_time_ms, ticks
+
+
+
+    
+
 #________________FUNCTIONS____________________________#
 def ScreenPresent(renderer):
     SDL_RenderPresent(renderer)
@@ -378,13 +466,70 @@ def GetCharacters():
     
     return resources
 
-#def TPS(T_rate):
-    #start_time_ms = int(SDL_GetTicks())
-    #elapsed_time_ms = int(SDL_GetTicks() - start_time_ms)
-    #SDL_Delay(1000//T_rate - elapsed_time_ms)
-    #seconds_per_frame = (SDL_GetTicks() - start_time_ms) / 1000
-    #ticks = 1 // seconds_per_frame
-    #return ticks
+def CheckCollision(a, b, renderer):
+
+    def showBorders(top, bottom, left, right):
+        left.Render(alpha = 0)
+        bottom.Render(alpha = 0)
+        right.Render(alpha = 0)
+        top.Render(alpha = 0)
+
+    leftA = a.dest_rect.x
+    rightA = a.dest_rect.x + a.dest_rect.w
+    topA = a.dest_rect.y
+    bottomA = a.dest_rect.y + a.dest_rect.h
+
+    
+    leftL = TextObject(renderer, "|", 1, 28, ['joystix', b'joystix.ttf'], color= (0, 0, 0), location=(leftA + 1, topA))
+    bottomL = TextObject(renderer, "__", 32, 1, ['joystix'], color= (0, 0, 0), location=(leftA, bottomA + 1))
+    rightL = TextObject(renderer, "|", 1, 28, ['joystix'], color= (0, 0, 0),location=(rightA - 1, topA))
+    topL = TextObject(renderer, "__", 32, 1, ['joystix'], color= (0, 0, 0),location=(leftA, topA - 2))
+    
+    if SDL_HasIntersection(topL.rect, b.dest_rect):
+        a.y = b.y + (b.h + 5)
+        showBorders(topL, bottomL, leftL, rightL)
+        return True
+    elif SDL_HasIntersection(leftL.rect, b.dest_rect):
+        a.x = b.x + (b.w - 3)
+        showBorders(topL, bottomL, leftL, rightL)
+        return True
+    elif SDL_HasIntersection(bottomL.rect, b.dest_rect):
+        a.y = b.y - (b.h + 7)
+        showBorders(topL, bottomL, leftL, rightL)
+        return True
+    elif SDL_HasIntersection(rightL.rect, b.dest_rect):
+        a.x = b.x - (b.w + 3)
+        showBorders(topL, bottomL, leftL, rightL)
+        return True
+        
+
+
+def CanInteract(a, b):
+
+    d = math.sqrt(abs(a.dest_rect.x - b.dest_rect.x)**2 + abs(a.dest_rect.y - b.dest_rect.y)**2)    # Actual math distance formula to calculate distance between object and player
+    if d <= 40:
+        return True
+    else:
+        return False
+    #if a.dest_rect.x < b.dest_rect.x:
+     #   if (b.dest_rect.x - a.dest_rect.x) <= 30:
+      #      return True
+    #elif b.dest_rect.x < a.dest_rect.x:
+     #   if (a.dest_rect.x - b.dest_rect.x) <= 30:
+      #      return True
+    #elif a.dest_rect.y < b.dest_rect.y:           
+     #   if (b.dest_rect.y - a.dest_rect.y) <= 30:
+      #      return True
+    #elif b.dest_rect.y < a.dest_rect.y:
+     #   if (a.dest_rect.y - b.dest_rect.y) <= 30:
+      #      return True
+    #else:
+        #False    
+
+
+def SaveData():
+    pass
+
 
 def main():
     SDL_Init(SDL_INIT_VIDEO)
@@ -396,14 +541,17 @@ def main():
     running = True
     WIDTH = 640
     HEIGHT = 480
-    TickRate = 60
+    TickRate = 120
     player = None
+    paused = False
     Fullscreen = False
     gamestate = 'MENU'
     sprite_list = GetCharacters()
     characters = []
     character_selection = None
     character_selection_list = dict()
+    menu_num = 0
+    read_key = True
 
     #_______________Window and Renderer___________________#
     mouse = Pointer()
@@ -414,6 +562,16 @@ def main():
     event = SDL_Event()
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
     SDL_ShowCursor(SDL_ENABLE)
+
+    #_______________Key Handling__________________________________________#
+    #keys = {
+        #"UP" : key[SDL_SCANCODE_UP],
+       # "DOWN" : key[SDL_SCANCODE_DOWN],
+      #  "P" : key[SDL_SCANCODE_P],
+     #   "F12" : key[SDL_SCANCODE_F12]
+    #}
+
+    
     
     #________________OBJECTS______________________________#
 
@@ -427,9 +585,15 @@ def main():
         "No": TextObject(renderer, "No", 100, 50, ['joystix'], location=(300, 300))
     }
 
-    cache = TextureCache(renderer)
-    
+    p_menu_items = [
+        TextObject(renderer, "Inventory", 100, 25, ['joystix'], color=(255, 40, 40), location=(50, 152), font_size=(10)),
+        TextObject(renderer, "Save", 100, 25, ['joystix'], color=(255, 40, 40), location=(50, 202), font_size=(10)),
+        TextObject(renderer, "Options", 100, 25, ['joystix'], color=(255, 40, 40), location=(50, 252), font_size=(10))
+    ]
+    time = Time()
 
+
+    cache = TextureCache(renderer)
 
     xs = 0
     for c in sprite_list:
@@ -446,27 +610,53 @@ def main():
         direction = ''
         movement = False
         #TICK_RATE__________________________________________#
-        #ticks = TPS(TickRate)
+        ticks = time.TPS(TickRate)[0]
 
         #EVENTS_____________________________________________#
         #___KeyEvents_______________________________________#
         key = SDL_GetKeyboardState(None)
 
         if (key[SDL_SCANCODE_LEFT]):
-            movement = True
-            direction = 'left'
+            if not paused:
+                movement = True
+                direction = 'left'
 
         if (key[SDL_SCANCODE_RIGHT]):
-            movement = True
-            direction = 'right'
+            if not paused:
+                movement = True
+                direction = 'right'
 
         if (key[SDL_SCANCODE_UP]):
-            movement = True
-            direction = 'up'
+            if not paused:
+                movement = True
+                direction = 'up'
+            elif paused:
+                if read_key == True:
+                    menu_num -= 1
+                    if menu_num < 0:
+                        menu_num = len(p_menu_items)-1
+                    read_key = False
+                elif read_key == False:
+                    pass
 
         if (key[SDL_SCANCODE_DOWN]):
-            movement = True
-            direction = 'down'
+            if not paused:
+                movement = True
+                direction = 'down'
+            elif paused:
+                if read_key == True:
+                    menu_num += 1
+                    if menu_num > len(p_menu_items) - 1:
+                        menu_num = 0
+                    read_key = False
+                elif read_key == False:
+                    pass
+        
+        if (key[SDL_SCANCODE_P]):
+            if (paused):
+                paused = False
+            elif not (paused):
+                paused = True
 
         if (key[SDL_SCANCODE_F12]):
             if Fullscreen == False:
@@ -478,6 +668,9 @@ def main():
             SDL_Quit()
             TTF_Quit()
             running = False
+
+        if ticks % 30 == 0:
+            read_key = True
             
         # ________________________________________________#
         WindowState(window, renderer, Fullscreen)
@@ -526,20 +719,41 @@ def main():
                     else:
                         character_selection = None
                     camera = Camera(WIDTH, HEIGHT, speed = 3, p = player)
+                    z_interact = AnimatedButton(20, 26, WIDTH//2, HEIGHT-50, renderer, 'Z_interact.bmp')
+                    pmenu = PausedMenu(192, 192, 25, 50, renderer, 'ScrollMenu.bmp', p_menu_items)
                     scene = Scene(dict())
                     SceneOne = scene.CreateScene(cache, renderer, 'Maps/Game-1.mx', player, None, None)
+                    GameTime = Time(ticks)
 
         if (gamestate == 'GAME'):
+            GameTime.Process()
+
             if (player):
                 player.Movement(movement, direction)
+                
                 player.Animating()
                 camera.Process()
+            
+            #Collision Checks
+            for objects in SceneOne:
+                if objects == 'npc':
+                    for stuff in SceneOne[objects]:
+                        CheckCollision(player, stuff, renderer)
 
-            for items in SceneOne:
-                    for stuff in SceneOne[items]:
-                        if items == 'npc' or items == 'npc2' or items == 'npc3':
-                            if (player.Is_Touching(stuff)):
-                                player.Moving = False
+            #Interaction Checks
+            for npc in SceneOne['npc']:
+                if CanInteract(player, npc):
+                    z_interact.Animating()
+            
+            #Pause Menu Logic
+            if paused:
+                print(GameTime.minutes)
+                for items in p_menu_items:
+                    if p_menu_items[menu_num] == items:
+                        p_menu_items[menu_num].highlight = True
+                    else:
+                        items.highlight = False
+            
 
         #RENDERING______________________________________________#
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255)
@@ -578,8 +792,16 @@ def main():
                         piece.Render(renderer, (camera.x, camera.y))
                     else:
                         piece.Render(camera_pos=(camera.x, camera.y))
+                    
             camera.Show(renderer)
             player.Render(renderer, camera_pos=(camera.x, camera.y))
+
+            for npc in SceneOne['npc']:
+                if (CanInteract(player, npc)):     
+                    z_interact.Render(renderer)
+
+            if paused == True:
+                pmenu.Render(renderer)
             
 
 
