@@ -417,7 +417,7 @@ class Pointer:
             SDL_FreeCursor(Pointer.cursors[cursor])
 
 class Time:
-    def __init__(self, game_time = 0, T_rate = 120, seconds = 0, minutes = 0, hour = 0):
+    def __init__(self, game_time = 0, T_rate = 60, seconds = 0, minutes = 0, hour = 0):
         self.miliseconds = game_time
         self.seconds = seconds
         self.minutes = minutes
@@ -434,11 +434,13 @@ class Time:
             self.minutes == 0
     
     def TPS(self, T_rate):
+        ticks = 0
         start_time_ms = int(SDL_GetTicks())
         elapsed_time_ms = int(SDL_GetTicks() - start_time_ms)
         SDL_Delay(1000//T_rate - elapsed_time_ms)
         seconds_per_frame = (SDL_GetTicks() - start_time_ms) / 1000
-        ticks = 1 // seconds_per_frame
+        if seconds_per_frame > 0:
+            ticks = 1 // seconds_per_frame
         return start_time_ms, ticks
 
 
@@ -527,6 +529,7 @@ def CanInteract(a, b):
         #False    
 
 
+
 def SaveData():
     pass
 
@@ -541,7 +544,7 @@ def main():
     running = True
     WIDTH = 640
     HEIGHT = 480
-    TickRate = 120
+    TickRate = 60
     player = None
     paused = False
     Fullscreen = False
@@ -590,7 +593,6 @@ def main():
         TextObject(renderer, "Save", 100, 25, ['joystix'], color=(255, 40, 40), location=(50, 202), font_size=(10)),
         TextObject(renderer, "Options", 100, 25, ['joystix'], color=(255, 40, 40), location=(50, 252), font_size=(10))
     ]
-    time = Time()
 
 
     cache = TextureCache(renderer)
@@ -602,6 +604,8 @@ def main():
 
     for c in sprite_list:
         characters.append(c)
+    
+    ticks = Time()
 
 
     #______________GENERAL PROCESSING______________________#
@@ -610,7 +614,8 @@ def main():
         direction = ''
         movement = False
         #TICK_RATE__________________________________________#
-        ticks = time.TPS(TickRate)[0]
+        t_count = ticks.TPS(TickRate)
+        print(t_count)
 
         #EVENTS_____________________________________________#
         #___KeyEvents_______________________________________#
@@ -652,12 +657,7 @@ def main():
                 elif read_key == False:
                     pass
         
-        if (key[SDL_SCANCODE_P]):
-            if (paused):
-                paused = False
-            elif not (paused):
-                paused = True
-
+        
         if (key[SDL_SCANCODE_F12]):
             if Fullscreen == False:
                 Fullscreen = True
@@ -668,9 +668,6 @@ def main():
             SDL_Quit()
             TTF_Quit()
             running = False
-
-        if ticks % 30 == 0:
-            read_key = True
             
         # ________________________________________________#
         WindowState(window, renderer, Fullscreen)
@@ -723,7 +720,7 @@ def main():
                     pmenu = PausedMenu(192, 192, 25, 50, renderer, 'ScrollMenu.bmp', p_menu_items)
                     scene = Scene(dict())
                     SceneOne = scene.CreateScene(cache, renderer, 'Maps/Game-1.mx', player, None, None)
-                    GameTime = Time(ticks)
+                    GameTime = ticks
 
         if (gamestate == 'GAME'):
             GameTime.Process()
@@ -747,7 +744,6 @@ def main():
             
             #Pause Menu Logic
             if paused:
-                print(GameTime.minutes)
                 for items in p_menu_items:
                     if p_menu_items[menu_num] == items:
                         p_menu_items[menu_num].highlight = True
@@ -802,6 +798,9 @@ def main():
 
             if paused == True:
                 pmenu.Render(renderer)
+            
+            #if paused == False:
+                #print(GameTime.hour, ":", GameTime.minutes, ":", GameTime.seconds)
             
 
 
