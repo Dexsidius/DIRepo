@@ -615,7 +615,6 @@ def main():
         movement = False
         #TICK_RATE__________________________________________#
         t_count = ticks.TPS(TickRate)
-        print(t_count)
 
         #EVENTS_____________________________________________#
         #___KeyEvents_______________________________________#
@@ -657,7 +656,16 @@ def main():
                 elif read_key == False:
                     pass
         
-        
+        if read_key == True:
+            if (key[SDL_SCANCODE_P]):
+                if not (paused):
+                    paused = True
+                    read_key = False
+                elif paused:
+                    paused = False
+                    read_key = False
+
+
         if (key[SDL_SCANCODE_F12]):
             if Fullscreen == False:
                 Fullscreen = True
@@ -725,9 +733,11 @@ def main():
         if (gamestate == 'GAME'):
             GameTime.Process()
 
+            if t_count[0] % 30 == 0:
+                read_key = True
+
             if (player):
                 player.Movement(movement, direction)
-                
                 player.Animating()
                 camera.Process()
             
