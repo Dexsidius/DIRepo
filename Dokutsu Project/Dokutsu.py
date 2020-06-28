@@ -417,27 +417,29 @@ class Pointer:
             SDL_FreeCursor(Pointer.cursors[cursor])
 
 class Time:
-    def __init__(self, game_time = 0, T_rate = 60, seconds = 0, minutes = 0, hour = 0):
+    def __init__(self, game_time = 0, T_rate = 120, seconds = 0, minutes = 0, hour = 0):
         self.miliseconds = game_time
         self.seconds = seconds
         self.minutes = minutes
         self.hour = hour
+        self.T_rate = T_rate
 
     def Process(self):
         if self.miliseconds % 1000 == 0:
             self.seconds += 1
+            self.miliseconds = 0
         if self.seconds == 60:
             self.minutes += 1
-            self.seconds == 0
+            self.seconds = 0
         if self.minutes == 60:
             self.hour += 1
-            self.minutes == 0
+            self.minutes = 0
     
-    def TPS(self, T_rate):
+    def TPS(self):
         ticks = 0
         start_time_ms = int(SDL_GetTicks())
         elapsed_time_ms = int(SDL_GetTicks() - start_time_ms)
-        SDL_Delay(1000//T_rate - elapsed_time_ms)
+        SDL_Delay(1000//self.T_rate - elapsed_time_ms)
         seconds_per_frame = (SDL_GetTicks() - start_time_ms) / 1000
         if seconds_per_frame > 0:
             ticks = 1 // seconds_per_frame
@@ -540,11 +542,11 @@ def main():
         print("TTF_Init: ", TTF_GetError())
 
 
-    #__________________VARIABLES_________________________#
+    #__________________GLOBAL VARIABLES_________________________#
     running = True
     WIDTH = 640
     HEIGHT = 480
-    TickRate = 60
+    TickRate = 120
     player = None
     paused = False
     Fullscreen = False
@@ -605,7 +607,7 @@ def main():
     for c in sprite_list:
         characters.append(c)
     
-    ticks = Time()
+    GameTime = Time()
 
 
     #______________GENERAL PROCESSING______________________#
@@ -613,8 +615,6 @@ def main():
     while (running):
         direction = ''
         movement = False
-        #TICK_RATE__________________________________________#
-        t_count = ticks.TPS(TickRate)
 
         #EVENTS_____________________________________________#
         #___KeyEvents_______________________________________#
@@ -728,12 +728,12 @@ def main():
                     pmenu = PausedMenu(192, 192, 25, 50, renderer, 'ScrollMenu.bmp', p_menu_items)
                     scene = Scene(dict())
                     SceneOne = scene.CreateScene(cache, renderer, 'Maps/Game-1.mx', player, None, None)
-                    GameTime = ticks
 
         if (gamestate == 'GAME'):
+            ticks = GameTime.TPS()
             GameTime.Process()
 
-            if t_count[0] % 30 == 0:
+            if ticks[0] % 30 == 0:
                 read_key = True
 
             if (player):
